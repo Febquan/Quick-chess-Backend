@@ -35,12 +35,13 @@ function handleSocketEvents(io) {
       console.log("leavve", io.sockets.adapter.rooms);
       socket.nsp.to(roomName).emit("host", true);
       socket.to(roomName).emit("OpponentLeave");
+      socket.to(roomName).emit("ServerSendMessage", "Server: Player leave !");
     });
     socket.on("IBeatYou", (roomId) => {
       socket.to(roomId).emit("YouLose");
     });
     socket.on("Surrender", (roomId) => {
-      socket.to(roomId).emit("EnemySurrender", "Opponent Surrender");
+      socket.to(roomId).emit("EnemySurrender", "Congratulation !");
     });
     socket.on("DeclineDraw", (roomId) => {
       socket.to(roomId).emit("DeclineCallDraw");
@@ -87,7 +88,10 @@ function handleSocketEvents(io) {
       console.log("Client disconnected", io.sockets.adapter.rooms);
       io.sockets.adapter.rooms.forEach((room, roomName) => {
         if (room.has(socket.id)) {
-          socket.to(roomName).emit("playerDisconnect");
+          socket.to(roomName).emit("OpponentLeave");
+          socket.nsp
+            .to(roomName)
+            .emit("ServerSendMessage", "Server: Player leave !");
           socket.nsp.to(roomName).emit("host", true);
         }
       });
