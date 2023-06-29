@@ -1,22 +1,25 @@
 const shortid = require("shortid");
 function handleSocketEvents(io) {
-  const availiableRoomIds = [];
-  const fullRoomIds = [];
+  let availiableRoomIds = [];
+  let PrivateRoom = [];
 
   io.on("connection", (socket) => {
     console.log("client connect");
 
-    socket.on("GameOn", () => {
+    socket.on("GameOn", ({ name, elo }) => {
       console.log("GAMEONNNN");
       for (const roomId of availiableRoomIds) {
         if (io.sockets.adapter.rooms.get(roomId)?.size < 2) {
+          //join guest
           socket.join(roomId);
           socket.nsp.to(roomId).emit("joined", roomId);
-          console.log(io.sockets.adapter.rooms);
           io.to(socket.id).emit("host", false);
           socket
             ?.to(roomId)
-            .emit("ServerSendMessage", "Server: New player joined");
+            .emit("ServerSendMessage", `User ${name} elo ${elo} joined`);
+
+          //get host name
+          socket.to(roomId).emit("IntroduceYourself");
           return;
         }
       }
@@ -29,9 +32,41 @@ function handleSocketEvents(io) {
       console.log(io.sockets.adapter.rooms);
     });
 
+    socket.on("JoinRoom", ({ name, elo, PrivateRoomId }) => {
+      if (!PrivateRoom.includes(PrivateRoomId)) {
+        socket?.emit("NoRoomFound");
+        return;
+      }
+      socket.join(PrivateRoomId);
+      socket.nsp.to(PrivateRoomId).emit("joined", PrivateRoomId);
+      io.to(socket.id).emit("host", false);
+      socket
+        ?.to(PrivateRoomId)
+        .emit("ServerSendMessage", `User ${name} elo ${elo} joined`);
+      //get host name
+      socket.to(PrivateRoomId).emit("IntroduceYourself");
+    });
+
+    socket.on("CreatePrivateRoom", () => {
+      const roomId = generateRoomId();
+      socket.join(roomId);
+      PrivateRoom.push(roomId);
+      socket.nsp.to(roomId).emit("joined", roomId);
+      io.to(roomId).emit("host", true);
+      console.log(io.sockets.adapter.rooms);
+    });
+
+    socket.on("HiIam", ({ name, elo, roomId }) => {
+      socket.to(roomId).emit("HeIntroduce", { name, elo });
+    });
     // Leave a room
     socket.on("LeaveRoom", (roomName) => {
       socket.leave(roomName);
+      if (!io.sockets.adapter.rooms.has(roomName)) {
+        availiableRoomIds = availiableRoomIds.filter((el) => el !== roomName);
+        PrivateRoom = PrivateRoom.filter((el) => el !== roomName);
+      }
+
       console.log("leavve", io.sockets.adapter.rooms);
       socket.nsp.to(roomName).emit("host", true);
       socket.to(roomName).emit("OpponentLeave");
@@ -89,7 +124,7 @@ function handleSocketEvents(io) {
       io.sockets.adapter.rooms.forEach((room, roomName) => {
         if (room.has(socket.id)) {
           socket.to(roomName).emit("OpponentLeave");
-          socket.nsp
+          socket
             .to(roomName)
             .emit("ServerSendMessage", "Server: Player leave !");
           socket.nsp.to(roomName).emit("host", true);

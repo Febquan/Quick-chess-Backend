@@ -9,7 +9,7 @@ const userAuthRoute = require("./routes/user/auth/userAuthRoute");
 const isUserRoute = require("./routes/user/auth/is-user");
 const restorePasswordRoute = require("./routes/user/auth/restorePasswordRoute");
 const changePasswordRoute = require("./routes/user/auth/changePasswordRoute");
-
+const gameControlRoute = require("./routes/user/game/gameControl");
 //cors
 app.use(cors());
 app.options("*", cors());
@@ -29,6 +29,8 @@ app.use((req, res, next) => {
 app.use("/user", userAuthRoute);
 app.use("/user", isUserRoute, changePasswordRoute);
 app.use("/user", restorePasswordRoute);
+app.use("/user", gameControlRoute);
+
 app.get("/", (req, res, next) => {
   res.send("hello");
 });

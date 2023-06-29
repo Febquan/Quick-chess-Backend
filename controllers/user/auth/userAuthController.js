@@ -12,7 +12,13 @@ exports.checkUserName = async (req, res, next) => {
     if (userFind) {
       res
         .status(201)
-        .json({ message: "User name đã được đăng ký !", ok: false });
+        .json({ message: "User name đã được đăng ký!", ok: false });
+    }
+    if (userName?.length <= 5) {
+      res.status(201).json({ message: "Tên quá ngắn!", ok: false });
+    }
+    if (userName?.length >= 30) {
+      res.status(201).json({ message: "Tên quá dài!", ok: false });
     }
     res.status(201).json({ message: "User name hợp lệ!", ok: true });
   } catch (err) {
@@ -119,7 +125,8 @@ exports.checkAutoLogin = async (req, res, next) => {
   try {
     const userId = req.userId;
     if (userId) {
-      res.status(200).json({ ok: true });
+      const user = await User.findOne({ _id: userId });
+      res.status(200).json({ name: user.userName, elo: user.elo, ok: true });
     } else {
       const error = new Error("Lần đăng nhập đã hết hạn");
       error.statusCode = 400;

@@ -14,6 +14,11 @@ const userSchema = new Schema({
     type: String,
     required: true,
   },
+  elo: {
+    type: Number,
+    required: true,
+    default: 0,
+  },
   emailVerify: {
     type: Boolean,
     require: true,
